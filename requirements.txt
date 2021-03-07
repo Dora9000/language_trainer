@@ -1,0 +1,3 @@
+pip install pyqt5 pyqt5-tools
+# QML Editor 0.9.7-2019
+pip install peewee
