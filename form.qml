@@ -12,12 +12,13 @@ Item {
     function append_sentence(sentence) {
         dataModel.insert(0,sentence)
     }
-    /*function append_word(word) {
+    function append_word(word) {
         dndModel.insert(0,word)
-    }*/
-    /*function append_word_to_sentence(word) {
-        textModel.append({text: "eeeeeeeeeeeeeeeeeee"})
-    }*/
+    }
+    function append_word_to_sentence(word) {
+        textModel.append(word)
+    }
+
     Item {
         /*
         Меню
@@ -317,6 +318,107 @@ Item {
         anchors.leftMargin: menu_size
         anchors.left: parent.left
         id: train_screen
+        property bool train_started : false
+
+        Rectangle {
+            id: train_screen_0
+            width: parent.width; height: parent.height
+            anchors.top: parent.top
+            anchors.right: parent.right
+            color: "mistyrose"
+            visible: !train_screen.train_started
+            property int train_test : 0 //1
+            property int level : 0
+            Text {
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.leftMargin: 125
+                anchors.topMargin: 60
+                text: "Here you can start the language training. \n\nPlease select a difficulty level and training mode";
+                font.pointSize: 12
+                font.family: "Helvetica"
+                font.weight: Font.Light
+                horizontalAlignment: TextInput.AlignHCenter
+            }
+
+            Button {
+                id: start_train_button
+                visible: !train_screen.train_started
+                height: 40
+                width: 100
+                text: "Start"
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.rightMargin: 25
+                anchors.bottomMargin: parent.height/2 + 15
+                onClicked: {
+                    text_editor.get_task(train_screen_0.level,train_screen_0.train_test)
+                    train_screen.train_started = true
+                    finish_sentence_button.visible = false
+                    result.text = ""
+                    text_editor.set_text("hello from start_train_button");
+                }
+            }
+
+            ButtonGroup {
+                buttons: levels.children
+                onClicked: {
+                    if (button.text == "Light") {
+                        train_screen_0.level = 0
+                    }
+                    if (button.text == "Middle") {
+                        train_screen_0.level = 1
+                    }
+                    if (button.text == "Heavy") {
+                        train_screen_0.level = 2
+                    }
+                }
+            }
+
+            Column {
+                id: levels
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.verticalCenter: parent.verticalCenter
+                Label {
+                    text: qsTr("Difficulty level")
+                    font.pixelSize: 18
+                    font.italic: true
+                }
+                RadioButton { text: "Light"; checked : true; font.pixelSize: 15 }
+                RadioButton { text: "Middle"; font.pixelSize: 15 }
+                RadioButton { text: "Heavy"; font.pixelSize: 15 }
+            }
+
+            ButtonGroup {
+                buttons: types_train.children
+                onClicked: {
+                    if (button.text == "Train") {
+                        train_screen_0.train_test = 0
+                    } else {
+                        train_screen_0.train_test = 1
+                    }
+
+                }
+            }
+
+            Column {
+                id: types_train
+                anchors.left: parent.left
+                anchors.leftMargin: 125
+                anchors.verticalCenter: parent.verticalCenter
+                Label {
+                    text: qsTr("Training mode")
+                    font.pixelSize: 18
+                    font.italic: true
+                }
+                RadioButton { text: "Train"; checked : true; font.pixelSize: 15}
+                RadioButton { text: "Test"; font.pixelSize: 15 }
+            }
+
+
+        }
+
+
 
 
 
@@ -324,7 +426,27 @@ Item {
             width: parent.width; height: parent.height / 2
             anchors.top: parent.top
             anchors.right: parent.right
-            color: "orange"
+            color: "mistyrose"
+            visible: train_screen.train_started
+
+
+            Button {
+                id: finish_sentence_button
+                height: 40
+                width: 100
+                text: "Finish"
+                visible : false
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.rightMargin: 135
+                anchors.bottomMargin: 15
+                onClicked: {
+                    check_sentence_button.enabled = true
+                    textModel.clear()
+                    dndModel.clear()
+                    train_screen.train_started = false
+                }
+            }
             Button {
                 id: check_sentence_button
                 height: 40
@@ -334,11 +456,32 @@ Item {
                 anchors.bottom: parent.bottom
                 anchors.rightMargin: 25
                 anchors.bottomMargin: 15
+                enabled : true
                 onClicked: {
-                    textModel.clear()
-                    text_editor.set_text("hello from check_sentence_button");
+                    var finished = true
+                    for (let i = 0; i < textModel.count; i++) {
+                        if (textModel.get(i).active_drop) {
+                            result.text = "Not finished"
+                            finished = false
+                        }
+                    }
+                    if (finished) {
+                        text_editor.get_mark()
+                        enabled = false
+                        finish_sentence_button.visible = true
+                        text_editor.set_text("hello from check_sentence_button");
+                    }
                 }
             }
+            Text {
+                id : result
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.rightMargin: 50
+                anchors.bottomMargin: 0
+                text: "" //1 mistake
+            }
+
             Rectangle {
                 visible: true
                 color: "white"
@@ -348,15 +491,11 @@ Item {
                 anchors.topMargin: 30
 
 
-
                 ListModel {
                     id: textModel
                     property var insertIndex : -1
-                    ListElement { text: "Hello"; active_drop : false}
-                    ListElement { text: ".........."; active_drop : true}
-                    ListElement { text: "Flow"; active_drop : false}
-                    ListElement { text: "Hello, WorldHello, World!"; active_drop : true}
-                    ListElement { text: "Hello, WorldHello, World!"; active_drop : false}
+                    //ListElement { text: "Hello"; active_drop : false}
+                    //ListElement { text: ".........."; active_drop : true}
                 }
 
                 Flow {
@@ -415,18 +554,18 @@ Item {
 
 
 
-
         // НИЖНЯЯ ПОЛОВИНА
 
         Rectangle {
             width: parent.width; height: parent.height / 2
             anchors.bottom: parent.bottom
             anchors.right: parent.right
-            color: "orange"
+            color: "mistyrose"
+            visible: train_screen.train_started
 
             Rectangle {
                 visible: true
-                color: "orange"
+                color: "mistyrose"
                 width: parent.width - 50; height: parent.height - 50
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -497,9 +636,10 @@ Item {
                                     var newPos = textModel.insertIndex
                                     var new_text = dndModel.get(index).text
                                     text_editor.set_text(new_text);
+                                    text_editor.write_answer(new_text, newPos);
                                     textModel.remove(newPos);
                                     textModel.insert(newPos,{text:new_text});
-                                    dndModel.set(index, { color : "orange", text : ""})
+                                    dndModel.set(index, { color : "mistyrose", text : ""})
                                     dndGrid.draggedItemIndex = -1
                                     textModel.insertIndex = -1
                                 }
@@ -569,13 +709,18 @@ Item {
     }
 
 
+
     Connections {
         target: text_editor
         onGetResult: {
             getResult.text = get_text
-            //dataModel[0].text = "heee"
         }
         onSetResult: {}
+        onGetTask : {}
+        onWriteAnswer : {}
+        onGetMark : {
+            result.text = get_mark
+        }
     }
 
     Connections {

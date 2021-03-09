@@ -12,11 +12,17 @@ from PyQt5 import QtWidgets
 from PyQt5.QtCore import QMetaObject, Q_ARG, QVariant, QTimer, \
     QDate
 
+
 def add_words(obj, words_list):
-    for i in range(3):
-        for word, word_id in words_list:
-            value = {"text": str(i)+"wwwwww", "id": str(word_id), "color": "white"}
-            QMetaObject.invokeMethod(obj, "append_word", Q_ARG(QVariant, value))
+    for word in words_list:
+        value = {"color" : "white", "text" : word}
+        QMetaObject.invokeMethod(obj, "append_word", Q_ARG(QVariant, value))
+
+
+def append_word_to_sentence(obj, words_list):  # random sort
+    for word, flag in words_list:
+        value = {"text": word, "active_drop": flag}
+        QMetaObject.invokeMethod(obj, "append_word_to_sentence", Q_ARG(QVariant, value))
 
 
 def init_form(obj):
@@ -37,6 +43,7 @@ if __name__ == '__main__':
     view.engine().rootContext().setContextProperty("text_editor", text_editor)
     view.setTitle('Language trainer')
     #init_form(view.rootObject())
-    #add_words(view.rootObject(), [("word1", 1)])
+    add_words(view.rootObject(), ["my", "his"])
+    append_word_to_sentence(view.rootObject(), [("word1", False),("..........", True),("word3", False),("..........", True),("word5", False)])
     view.show()
     sys.exit(app.exec_())
