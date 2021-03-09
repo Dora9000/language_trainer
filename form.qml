@@ -12,7 +12,12 @@ Item {
     function append_sentence(sentence) {
         dataModel.insert(0,sentence)
     }
-
+    /*function append_word(word) {
+        dndModel.insert(0,word)
+    }*/
+    /*function append_word_to_sentence(word) {
+        textModel.append({text: "eeeeeeeeeeeeeeeeeee"})
+    }*/
     Item {
         /*
         Меню
@@ -307,80 +312,252 @@ Item {
         определяет количество слов, которые нужно разместить. Кнопка «Проверить» проверяет расстановку,
         при наличии ошибок создаёт запись «Ошибка» в базе.
         */
-        visible: true//active_window == 2? true : false
+        visible: active_window == 2? true : false
         width: parent.width - menu_size; height: parent.height
         anchors.leftMargin: menu_size
         anchors.left: parent.left
+        id: train_screen
 
 
 
         Rectangle {
-            opacity: 1
-            color: "blue"
-            width: parent.width; height: parent.height
-        }
+            width: parent.width; height: parent.height / 2
+            anchors.top: parent.top
+            anchors.right: parent.right
+            color: "orange"
+            Button {
+                id: check_sentence_button
+                height: 40
+                width: 100
+                text: "Check"
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.rightMargin: 25
+                anchors.bottomMargin: 15
+                onClicked: {
+                    textModel.clear()
+                    text_editor.set_text("hello from check_sentence_button");
+                }
+            }
+            Rectangle {
+                visible: true
+                color: "white"
+                width: parent.width - 50; height: parent.height - 100
+                anchors.top: parent.top
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.topMargin: 30
 
-        Text {
-            id: helloText
-            text: "Hello world!"
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.horizontalCenter: parent.horizontalCenter
-            font.pointSize: 10; font.bold: true
-        }
 
 
-        property int dif : 3
+                ListModel {
+                    id: textModel
+                    property var insertIndex : -1
+                    ListElement { text: "Hello"; active_drop : false}
+                    ListElement { text: ".........."; active_drop : true}
+                    ListElement { text: "Flow"; active_drop : false}
+                    ListElement { text: "Hello, WorldHello, World!"; active_drop : true}
+                    ListElement { text: "Hello, WorldHello, World!"; active_drop : false}
+                }
 
-        Rectangle {
-            width: parent.width
-            height: parent.height / 2
-            anchors.bottom: parent.bottom
-            color: "#000000"
+                Flow {
+                    anchors.fill: parent
+                    anchors.margins: 4
+                    spacing: 2
 
-            Component {
-                id: dndDelegate
-                Item {
-                    id: wrapper
-                    width: dndGrid.cellWidth
-                    height: dndGrid.cellHeight
-                    Rectangle {
-                        width: 50
-                        height: 50
-                        color: "red"
+                    Repeater {
+                    id : repeaterGrid
+                        model: textModel
+                        Rectangle {
+                            width: t_metrics.tightBoundingRect.width + 20
+                            height: 40//t_metrics.tightBoundingRect.height + 10
+                            property bool active_drop : model.active_drop
+                            property bool caught_drop : false
+                            color: active_drop?  "red" : "white";
+                            radius: 5;
+
+                            Text {
+                                id: currentText
+                                anchors.centerIn: parent
+                                text: model.text;
+                                font.pointSize: 15
+                            }
+                            TextMetrics {
+                                id:     t_metrics
+                                font:   currentText.font
+                                text:   currentText.text
+                            }
+
+                            DropArea {
+                                id: word_container0
+                                anchors.fill: parent
+                                onEntered: {
+                                    if (parent.active_drop) {
+                                        parent.opacity = 0.6
+                                        text_editor.set_text(dndGrid.draggedItemIndex)
+                                        dndModel.set(dndGrid.draggedItemIndex, { color : "#80FF0000"})
+                                        textModel.insertIndex = index
+                                        text_editor.set_text(index)
+                                    }
+                                }
+                                onExited: {
+                                parent.opacity = 1
+                                    text_editor.set_text("exit")
+                                    dndModel.set(dndGrid.draggedItemIndex, { color : "white"})
+                                    textModel.insertIndex = -1
+                                }
+
+                            }
+                        }
                     }
                 }
             }
-
-            ListModel {
-                id: dndModel
-                ListElement { }
-                ListElement { }
-                ListElement { }
-                ListElement { }
-                ListElement { }
-                ListElement { }
-                ListElement { }
-                ListElement { }
-                ListElement { }
-
-            }
-
-            GridView {
-                id: dndGrid
-                anchors.fill: parent
-                anchors.margins: 10
-                cellWidth: parent.wigth
-                cellHeight: 100
-                model: dndModel
-                delegate: dndDelegate
-            }
         }
 
 
 
 
+        // НИЖНЯЯ ПОЛОВИНА
+
+        Rectangle {
+            width: parent.width; height: parent.height / 2
+            anchors.bottom: parent.bottom
+            anchors.right: parent.right
+            color: "orange"
+
+            Rectangle {
+                visible: true
+                color: "orange"
+                width: parent.width - 50; height: parent.height - 50
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.horizontalCenter: parent.horizontalCenter
+
+                Component {
+                    id: dndDelegate
+
+                    Rectangle {
+                        id: wrapper
+
+                        width: 230
+                        height: 35
+                        color : model.color
+                        Text {
+                            text : model.text
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+
+                        states: [
+
+                                State {
+                                    name: "greyedOut"
+                                    when: (dndGrid.draggedItemIndex != -1) && !(dragArea.drag.active)
+                                    PropertyChanges { target: wrapper; opacity: 0.5}
+                                },
+                                State {
+                                    name: "inactive"
+                                    when: !(dragArea.drag.active)
+                                    PropertyChanges { target: wrapper; opacity: 1.0}
+                                },
 
 
+                            State {
+                                name: "inDrag"
+                                when: dragArea.drag.active
+                                PropertyChanges { target: wrapper; width: 200 }
+                                PropertyChanges { target: wrapper; height: 50 }
+                                PropertyChanges { target: wrapper; parent: dndWordContainer }
+                                //PropertyChanges { target: wrapper; anchors.centerIn: undefined }
+                                PropertyChanges { target: wrapper; x: coords.mouseX}// - wrapper.width / 2 - 30
+                                PropertyChanges { target: wrapper; y: coords.mouseY}// - wrapper.height - train_screen.height / 2 }
+                                PropertyChanges { target: dndGrid; draggedItemIndex : index }
+                                PropertyChanges { target: imageBorder; opacity: 1 }
+                            }
+                        ]
+
+                        Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.OutQuint } }
+                        Behavior on height { NumberAnimation { duration: 900; easing.type: Easing.OutElastic } }
+                        Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.InOutQuad } }
+
+
+
+                        Drag.active: dragArea.drag.active
+                        Drag.hotSpot.x: wrapper.width / 2
+                        Drag.hotSpot.y: wrapper.height / 2
+                        MouseArea {
+                            id: dragArea
+                            anchors.fill: parent
+                            drag.target: parent
+                            onPressed: {
+                                var i = index
+                                text_editor.set_text(i);
+                            }
+
+                            onReleased: {
+                                if (textModel.insertIndex != -1) {
+                                    var newPos = textModel.insertIndex
+                                    var new_text = dndModel.get(index).text
+                                    text_editor.set_text(new_text);
+                                    textModel.remove(newPos);
+                                    textModel.insert(newPos,{text:new_text});
+                                    dndModel.set(index, { color : "orange", text : ""})
+                                    dndGrid.draggedItemIndex = -1
+                                    textModel.insertIndex = -1
+                                }
+                            }
+                        }
+
+
+                        Rectangle {
+                            id: imageBorder
+                            anchors.fill: parent
+                            radius: 5
+                            color: "transparent"
+                            border.color: "red"
+                            border.width: 6
+                            opacity: 0
+                        }
+                    }
+
+                }
+
+
+                ListModel {
+                    id: dndModel
+                    ListElement {color:"white"; text:"WORD"}
+                    ListElement {color:"white"; text:"WORD"}
+                    ListElement {color:"white"; text:"WORD"}
+                    ListElement {color:"white"; text:"WORD"}
+                    ListElement {color:"white"; text:"WORD"}
+                    ListElement {color:"white"; text:"WORD"}
+                    ListElement {color:"white"; text:"WORD"}
+                    ListElement {color:"white"; text:"WORD"}
+                    ListElement {color:"white"; text:"WORD"}
+                    ListElement {color:"white"; text:"WORD"}
+                    ListElement {color:"white"; text:"WORD"}
+                    ListElement {color:"white"; text:"WORD"}
+                }
+
+                GridView {
+                    flow : GridView.FlowTopToBottom
+                    id: dndGrid
+                    anchors.fill: parent
+                    interactive: false
+                    cellWidth: 250
+                    cellHeight: 50
+                    model: dndModel
+                    delegate: dndDelegate
+                    property int draggedItemIndex: -1
+
+                    Item {
+                        id: dndWordContainer
+                        anchors.fill: parent
+                    }
+
+                }
+            }
+        }
+
+//DEBUG text_editor.set_text(rect.x);
 
     }
 

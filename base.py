@@ -1,7 +1,10 @@
 from peewee import *
 from settings import DB_FILE, DEBUG
 import random
+import os
 
+if DEBUG:
+    os.remove(DB_FILE)
 db = SqliteDatabase(DB_FILE)
 
 
@@ -14,7 +17,7 @@ class Word(BaseModel):
     """
     Слово: Текст слова
     """
-    id = PrimaryKeyField(null=False, unique=True)
+    word_id = PrimaryKeyField(null=False, unique=True)
     text = CharField(max_length=100, unique=True)
 
     class Meta:
@@ -38,45 +41,21 @@ class Error(BaseModel):
     """
     Ошибка: Предложение, Слова, Порядковые номера слов, Сложность задания (?)
     """
-    id = PrimaryKeyField(null=False, unique=True)  # error id
     sentence_id = ForeignKeyField(Sentence, to_field='sentence_id')
     word_id = ForeignKeyField(Word)  # word that need to be found
+    task_id = IntegerField(null=False)  # not unique, one task to many errors
+    difficulty = IntegerField()
 
     class Meta:
         db_table = "Error"
 
 
-class Error_words(BaseModel):
-    """
-    Номер ошибки - порядковые номера слов
-    """
-    error_id = ForeignKeyField(Error)  # error id
-    word_id = ForeignKeyField(Word)  # word that need to be found
-
-    class Meta:
-        db_table = "Error_words"
-
-
-class Task(BaseModel):
-    """
-    Задание: Предложение, Слова, Порядковые номера слов, Сложность задания
-    сохранение целиком задания, которое было выполнено с ошибкой – с
-    учётом того, какие слова были размещены заранее, а какие не были.
-    """
-    id = IntegerField(null=False)
-    error_id = ForeignKeyField(Error)
-    difficulty = IntegerField()
-
-    class Meta:
-        db_table = "Task"
-
-
 def add_word(text):
-    val = Word.select(fn.MAX(Word.id)).scalar()
+    val = Word.select(fn.MAX(Word.word_id)).scalar()
     val = (0 if val is None else val) + 1
     try:
         row = Word.create(
-            id=val,
+            word_id=val,
             text=text,
         )
         row.save()
@@ -91,11 +70,11 @@ def add_sentence(text):  # text is list
     val = Sentence.select(fn.MAX(Sentence.sentence_id)).scalar()
     val = (0 if val is None else val) + 1
     for i in range(len(text)):
-        word = text[i]
+        w = text[i]
         try:
-            word = Word.select().where(Word.text == word).get()
+            w = Word.select().where(Word.text == w).get()
         except DoesNotExist:
-            print('Error. Word {0} does not exist'.format(word))
+            print('Error. Word {0} does not exist'.format(w))
             return None
         except Exception as e:
             print(e)
@@ -103,7 +82,7 @@ def add_sentence(text):  # text is list
         else:
             row = Sentence.create(
                 sentence_id=val,
-                word_id=word,
+                word_id=w,
                 order=i,
                 length=len(text),
             )
@@ -111,59 +90,29 @@ def add_sentence(text):  # text is list
     return val
 
 
-def add_error(sentence_id, word_id):
-    val = Error.select(fn.MAX(Error.id)).scalar()
+def add_error(sentence_id, word_ids):  # word_ids is list
+    assert (isinstance(word_ids, list))
+    assert (Sentence.get(Sentence.sentence_id == sentence_id) is not None)
+    val = Error.select(fn.MAX(Error.task_id)).scalar()
     val = (0 if val is None else val) + 1
     try:
-        row = Error.create(
-            id=val,
-            sentence_id=sentence_id,
-            word_id=word_id,
-        )
-        row.save()
+        for word_id in word_ids:
+            row = Error.create(
+                task_id=val,
+                sentence_id=sentence_id,
+                word_id=word_id,
+                difficulty=len(word_ids),
+            )
+            row.save()
         return val
     except Exception as e:
         print(e)
         return None
 
 
-def add_error_words(error_id, word_id):
-    try:
-        row = Error_words.create(
-            error_id=error_id,
-            word_id=word_id,
-        )
-        row.save()
-    except Exception as e:
-        print(e)
-
-
-def add_task(error_ids, d):  # error_ids is list
-    assert (isinstance(error_ids, list))
-    val = Task.select(fn.MAX(Task.id)).scalar()
-    i = (0 if val is None else val) + 1
-    for error_id in error_ids:
-        try:
-            row = Task.create(
-                id=i,
-                difficulty=d,
-                error_id=error_id,
-            )
-            row.save()
-        except Exception as e:
-            print(e)
-            return None
-    return i
-
-
-def delete_error(id):
-    err = Error.get(Error.id == id)
-    err.delete_instance(recursive=True)  # delete error and all in Error_words
-
-
-def delete_task(id):
-    task = Task.get(Task.id == id)
-    task.delete_instance()  # delete Task only
+def delete_error(task_id):
+    err = Error.get(Error.task_id == task_id)
+    err.delete_instance(recursive=True)
 
 
 def get_word(id=None, cnt=1):
@@ -171,42 +120,60 @@ def get_word(id=None, cnt=1):
         all_words = set(Word.select().text)
         assert(len(all_words) >= cnt)
         return random.sample(all_words, cnt)
-    return Word.get(Word.id == id).text
+    return Word.get(Word.word_id == id).text
 
 
-def get_sentence(id=None, len=0):
+def get_sentence(id=None, length=0):
     all_sentences = Sentence.select()
     if id is None:
         len_sentences = set()
-        for sentence in all_sentences:
-            if sentence.length >= len:
-                len_sentences.append((sentence.sentence_id))
+        for s in all_sentences:
+            if s.length >= length:
+                len_sentences.add(s.sentence_id)
         id = random.sample(len_sentences, 1)
 
     words = []
-    for sentence in all_sentences:
-        if sentence.sentence_id == id:
-            words.append([sentence.word_id,sentence.order])
-    words.sort(key = lambda x: x[1])
+    for s in all_sentences:
+        if s.sentence_id == id:
+            words.append([s.word_id, s.order])
+    words.sort(key=lambda x: x[1])
     words = [words[i][0] for i in range(len(words))]
     words = [get_word(id=words[i]) for i in range(len(words))]
     return " ".join(words)
 
 
+def get_sentences(with_errors=False):
+    # if with_errors == True -> calculate sum of tasks with errors in this sentence
+    # [["the first sentence", errors],["the second sentence", errors],.....]
+    # [["the first sentence"],["the second sentence"],.....]
+    text = []
+    if with_errors:
+        for sentence in Sentence.select(Sentence.sentence_id).distinct():
+            task_ids = Error.select(Error.task_id).where(Error.sentence_id == sentence.sentence_id).distinct()
+            text.append([get_sentence(id=sentence.sentence_id), len(task_ids)])
+    else:
+        for sentence in Sentence.select(Sentence.sentence_id).distinct():
+            text.append([get_sentence(id=sentence.sentence_id)])
+    return text
+
 
 def init_db(database):
-    database.create_tables([Word, Sentence, Error, Error_words, Task])
+    database.create_tables([Word, Sentence, Error])
     add_word('I')
     add_word('love')
     add_word('books')
     add_sentence('I love books'.split(' '))
     add_word('like')
-    add_sentence('I like books'.split(' '))
-    id = add_error(1, 2)
-    add_error_words(id, 4)
-    add_word('We')
+    add_word('hate')
+    add_word('smile')
+    add_word('angry')
+    add_sentence('I books'.split(' '))
+    add_sentence('I smile'.split(' '))
 
-    add_task([1], 3)
+    id = add_error(sentence_id=2, word_ids=[4, 3, 1])
+    id = add_error(sentence_id=2, word_ids=[2, 3, 1])
+
+    add_word('We')
 
 
 try:
@@ -214,26 +181,11 @@ try:
     if DEBUG:
         init_db(db)
 
-    for word in Word.select():
-        print(word.text, word.id)
-
-    for sentence in Sentence.select():
-        print(sentence.sentence_id, sentence.word_id)
-
-    # delete_error(1)
-    print(Word.get(Word.id == 1).text)
-    print('err')
-    for e in Error.select():
-        print(e.id, e.sentence_id)
-    print('err_w')
-    for e in Error_words.select():
-        print(e.error_id, e.word_id)
-    print('tasks')
-    for e in Task.select():
-        print(e.id, e.difficulty)
 
     db.close()
 except InternalError as e:
     print(e)
 
 print('hello from database')
+
+

@@ -12,6 +12,12 @@ from PyQt5 import QtWidgets
 from PyQt5.QtCore import QMetaObject, Q_ARG, QVariant, QTimer, \
     QDate
 
+def add_words(obj, words_list):
+    for i in range(3):
+        for word, word_id in words_list:
+            value = {"text": str(i)+"wwwwww", "id": str(word_id), "color": "white"}
+            QMetaObject.invokeMethod(obj, "append_word", Q_ARG(QVariant, value))
+
 
 def init_form(obj):
     # add sentences with/without errors
@@ -30,7 +36,7 @@ if __name__ == '__main__':
     view.engine().rootContext().setContextProperty("calculator", calculator)
     view.engine().rootContext().setContextProperty("text_editor", text_editor)
     view.setTitle('Language trainer')
-    init_form(view.rootObject())
-
+    #init_form(view.rootObject())
+    #add_words(view.rootObject(), [("word1", 1)])
     view.show()
     sys.exit(app.exec_())
