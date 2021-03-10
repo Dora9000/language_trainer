@@ -33,6 +33,7 @@ class TextEditor(QObject):
     getTask = pyqtSignal(arguments=['get_task'])
     writeAnswer = pyqtSignal(arguments=['write_answer'])
     getMark = pyqtSignal(str, arguments=['get_mark'])
+    rewriteSentence = pyqtSignal(arguments=['rewrite_sentence'])
     answers = []
 
     @pyqtSlot()
@@ -59,3 +60,17 @@ class TextEditor(QObject):
     def get_mark(self):
         # some work to compute
         self.getMark.emit("2 mistakes")
+
+    @pyqtSlot(str, int)
+    def rewrite_sentence(self, sentence, id):
+        print(sentence, id)
+        if sentence == "":
+            pass
+            # delete sentence
+        elif id == -2:
+            pass
+            # add sentence to DB
+        else:
+            pass
+            # rewrite sentence and make err = 0 (delete tasks)
+        self.rewriteSentence.emit()

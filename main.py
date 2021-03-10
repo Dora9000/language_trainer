@@ -28,7 +28,7 @@ def append_word_to_sentence(obj, words_list):  # random sort
 def init_form(obj):
     # add sentences with/without errors
     for i in range(4):
-        value = {"text": "Dora top", "color": "bisque", "err": "5"}
+        value = {"text": "Dora top", "color": "bisque", "err": "5", "sentence_id": str(i)}
         QMetaObject.invokeMethod(obj, "append_sentence", Q_ARG(QVariant, value))
 
 

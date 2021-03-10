@@ -1,7 +1,9 @@
-import QtQuick 2.0
+import QtQuick 2.9
 import QtQuick.Controls 2.15
 import QtQuick.Window 2.0
 import QtQuick.Layouts 1.15
+import QtQuick.Controls 2.1
+import QtGraphicalEffects 1.15
 
 Item {
     id:background
@@ -133,12 +135,15 @@ Item {
         элемента списка отображается количество допущенных ошибок
         */
 
-        visible: (active_window == 1? false : true)
+        visible: true//(active_window == 1? false : true)
         width: parent.width - menu_size; height: parent.height
         anchors.leftMargin: menu_size
         anchors.left: parent.left
 
+
+
         Rectangle {
+            id : font_blur0
             color: "whitesmoke"
             width: parent.width; height: parent.height
             anchors.horizontalCenter: parent.horizontalCenter
@@ -153,7 +158,17 @@ Item {
                 anchors.top: parent.top
                 anchors.right: parent.right
                 anchors.rightMargin: 230
-                onClicked: (dataModel.insert(0,{text: "new", color: "bisque", err: "1"}))
+                onClicked: {
+                    dataModel.insert(0,{text: "", color: "bisque", err: "0", sentence_id : "-2"});
+                    view.currentIndex = 0
+                    text_input_back.opacity = 0.3;
+                    text_input.visible = true;
+                    text_input_button.visible = true;
+                    //text_input_button_esc.visible = true;
+                    text_input_back_area.enabled = true;
+                    // text_editor.rewrite_sentence(new_text, dataModel.get(view.currentIndex).sentence_id)
+
+                }
             }
 
 
@@ -165,7 +180,11 @@ Item {
                 anchors.leftMargin: 10
                 width: 100
                 text: "delete"
-                onClicked: (dataModel.remove(view.currentIndex))
+                onClicked: {
+                //dataModel.setProperty(view.currentIndex, "err", 0);
+                    text_editor.rewrite_sentence("", dataModel.get(view.currentIndex).sentence_id)
+                    dataModel.remove(view.currentIndex)
+                }
             }
 
 
@@ -177,7 +196,17 @@ Item {
                 anchors.left: add_button2.right
                 anchors.top: add_button2.top
                 anchors.leftMargin: 10
-                onClicked: (dataModel.setProperty(view.currentIndex, "text", "some new text"))
+                onClicked: {
+                    if (dataModel.count > 0) {
+                        text_input_back.opacity = 0.4;
+                        text_input.visible = true;
+                        edit.text = dataModel.get(view.currentIndex).text;
+                        text_input_button.visible = true;
+                        text_input_button_esc.visible = true;
+                        text_input_back_area.enabled = true;
+                    }
+                    //(dataModel.setProperty(view.currentIndex, "text", "some new text"))
+                }
             }
 
 
@@ -230,7 +259,7 @@ Item {
                                 font.bold: true
                             }
                         }
-                    ScrollBar.vertical: ScrollBar {active: true}
+                    	ScrollBar.vertical: ScrollBar {active: true}
                         Rectangle {
                             anchors.margins: 5
                             anchors.fill: parent
@@ -255,6 +284,7 @@ Item {
                         id: listDelegate
                         property var view: ListView.view
                         property var isCurrent: ListView.isCurrentItem
+                        property var sentence_id: model.sentence_id
                         width: view.width
                         height: hat_size
                         Rectangle {
@@ -292,12 +322,155 @@ Item {
                             Text {
                                 anchors.centerIn: parent
                                 renderType: Text.NativeRendering
-                                text: model.err
+                                text: model.err + '/' + sentence_id
                                 font.bold: isCurrent ? true : false
                             }
+
                         }
                     }
                 }
+            }
+
+        }
+
+
+        FastBlur {
+            id: blurRectangleAndSubItems
+            opacity: text_input.visible? 1 : 0
+            visible: opacity !== 0
+
+            anchors.fill: font_blur0
+            source: font_blur0
+            radius: 35
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 500
+                    easing.type: Easing.InOutQuad
+                }
+            }
+        }
+        Rectangle {
+            id : text_input_back
+            anchors.fill: parent
+            color : "black"
+            opacity : 0
+            Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.InOutQuad } }
+            MouseArea {
+                id : text_input_back_area
+                anchors.fill: parent
+                enabled : false
+            }
+        }
+        Rectangle {
+            id : text_input_title
+            width: 500
+            height: 40
+            color : "tomato"
+            radius: height / 2
+            visible : text_input.visible
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: text_input.top
+            anchors.bottomMargin: 20
+            border {
+                color: "black"
+                width: 1
+            }
+            Text {
+                anchors.centerIn: parent
+                text: "Enter the text of the sentence"
+                font.pixelSize: 15
+            }
+        }
+
+        Rectangle {
+            id : text_input
+            width: 450
+            height: 200
+            color : "white"
+            visible : false
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.verticalCenter: parent.verticalCenter
+            Flickable {
+                id: flick
+                anchors.fill: parent
+                contentWidth: edit.paintedWidth
+                contentHeight: edit.paintedHeight
+                clip: true
+
+
+                function ensureVisible(r) {
+                    if (contentX >= r.x) {
+                        contentX = r.x;
+                    }
+                    else if (contentX+width <= r.x+r.width) {
+                        contentX = r.x+r.width-width;
+                    }
+                    if (contentY >= r.y) {
+                        contentY = r.y;
+                    }
+                    else if (contentY+height <= r.y+r.height) {
+                        contentY = r.y+r.height-height;
+                    }
+                }
+
+                TextInput {
+                    id: edit
+                    width: flick.width
+                    focus: true
+                    wrapMode: TextEdit.Wrap
+                    onCursorRectangleChanged: flick.ensureVisible(cursorRectangle)
+                    font.pixelSize: 17
+                    selectByMouse: true
+                    validator: RegExpValidator { regExp: /[^\s]+[A-Za-z\s]+$/ }
+                }
+            }
+        }
+
+
+        Button {
+            id: text_input_button
+            height: button_size
+            width: 100
+            visible : false
+            enabled : (edit.text != "")
+            text: "OK"
+            anchors.left: text_input.right
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.leftMargin: 20
+            onClicked: {
+                text_input_back.opacity = 0;
+                text_input.visible = false;
+                text_input_button.visible = false;
+                var new_text = edit.text.replace(/ {1,}/g," "); //Удаление двойных пробелов
+                new_text = new_text.trim(); //Удаление в начале и конце
+                //text_editor.set_text(new_text);
+
+                text_input_button_esc.visible = false;
+                dataModel.setProperty(view.currentIndex, "text", new_text);
+                dataModel.setProperty(view.currentIndex, "err", 0);
+                text_editor.rewrite_sentence(new_text, dataModel.get(view.currentIndex).sentence_id)
+                edit.text = "";
+                text_input_back_area.enabled = false;
+            }
+        }
+        Button {
+            id: text_input_button_esc
+            height: button_size
+            width: 100
+            visible : false
+            text: "Escape"
+            anchors.left: text_input.right
+            anchors.top: text_input_button.bottom
+            anchors.topMargin: 20
+            anchors.leftMargin: 20
+            onClicked: {
+                text_input_back.opacity = 0;
+                text_input.visible = false;
+                text_input_button.visible = false;
+                text_input_button_esc.visible = false;
+                edit.text = "";
+                text_input_back_area.enabled = false;
+
             }
         }
     }
