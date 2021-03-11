@@ -3,8 +3,8 @@ from settings import DB_FILE, DEBUG, LOAD_DATA
 import random
 import os
 
-if DEBUG:
-    os.remove(DB_FILE)
+#if DEBUG:
+#    os.remove(DB_FILE)
 db = SqliteDatabase(DB_FILE)
 
 
@@ -103,7 +103,7 @@ def add_error(sentence_id, word_ids=None, word_texts=None):  # word_ids is list 
         for text, flag in word_texts:
             word = Word.get(Word.text == text)
             word_ids.append((word.word_id, flag))
-        print(word_ids)
+        #print(word_ids)
     if word_ids is not None:
         assert (isinstance(word_ids, list))
         assert (Sentence.get(Sentence.sentence_id == sentence_id) is not None)
@@ -129,64 +129,64 @@ def delete_error(task_id):
     err = Error.select().where(Error.task_id == task_id)
     for e in err:
         e.delete_instance(recursive=True)
-    print("errors deleted")
+    #print("errors deleted")
 
 
 def delete_sentence(sentence_id):
     ss = Sentence.select().where(Sentence.sentence_id == sentence_id)
     for s in ss:
-        print("ssssssss ", get_sentence(s.sentence_id), s.sentence_id)
+        #print("ssssssss ", get_sentence(s.sentence_id), s.sentence_id)
         s.delete_instance(recursive=True)
-    print("sentence deleted")
+    #print("sentence deleted")
 
     err = Error.select().where(Error.sentence_id == sentence_id)
-    print("got e")
+    #print("got e")
     for e in err:
-        print(e.sentence_id, e.word_id.text)
+        #print(e.sentence_id, e.word_id.text)
         e.delete_instance(recursive=True)
-    print("errors deleted")
+    #print("errors deleted")
 
 
+    if False:
+        for word in Word.select():
+            print(word.text, word.word_id)
 
-    for word in Word.select():
-        print(word.text, word.word_id)
+        for sentence in Sentence.select():
+            print(get_sentence(sentence.sentence_id),sentence.sentence_id, sentence.word_id)
+        #for id in Sentence.select(Sentence.sentence_id).distinct():
+        #    print(get_sentence(id.sentence_id))
+        #print(get_sentences(True))
 
-    for sentence in Sentence.select():
-        print(get_sentence(sentence.sentence_id),sentence.sentence_id, sentence.word_id)
-    #for id in Sentence.select(Sentence.sentence_id).distinct():
-    #    print(get_sentence(id.sentence_id))
-    #print(get_sentences(True))
+        print('err')
+        for e in Error.select():
+            print(e.sentence_id.sentence_id, e.word_id, e.task_id, e.difficulty, e.word_to_check)
 
-    print('err')
-    for e in Error.select():
-        print(e.sentence_id.sentence_id, e.word_id, e.task_id, e.difficulty, e.word_to_check)
-
-    print('============================')
-
-
-
-
+        print('============================')
 
 
 
 
-def get_word(id=None, cnt=1):
-    if id is None:
-        assert(False)
-        all_words = set(Word.select().text)
+
+
+
+
+#def get_word(id=None, cnt=1):
+#    if id is None:
+#        assert(False)
+ #       all_words = set(Word.select().text)
         #print(all_words)
-        assert(len(all_words) >= cnt)
-        return random.sample(all_words, cnt)
-    return Word.get(Word.word_id == id).text
+ #       assert(len(all_words) >= cnt)
+ #       return random.sample(all_words, cnt)
+#    return Word.get(Word.word_id == id).text
 
 
 def get_words(cnt=1):
     words_ = Word.select().order_by(fn.Random()).limit(cnt)
     words = []
     for word in words_:
-        print("WORDS ", word)
+        #print("WORDS ", word)
         words.append(word.text)
-    print(words, cnt)
+    #print(words, cnt)
     assert(len(words) == cnt)
     return words
 
@@ -241,25 +241,21 @@ def check_task_exist_db(dif):
 
 
 def get_task(dif):
-    print('get task from DB')
+    #('get task from DB')
     query = Error.select().where(Error.difficulty == dif)
-
     if not query.exists():
         print('task with dif {0} do not exist'.format(dif))
         raise Exception('base - get_task - task do not exist with dif = {0}'.format(dif))
 
     task_ = Error.select().where(Error.difficulty == dif).order_by(fn.Random()).limit(1)
-    #for task in task_:
-        #print(get_sentence(task.sentence_id.sentence_id))
-
     for task in task_:
         words_ = Error.select().where(Error.task_id == task.task_id)
         words = []
         for word in words_:
-            print("WORDS TO GET TASK", word.word_id.text, word.word_to_check)
+            #print("WORDS TO GET TASK", word.word_id.text, word.word_to_check)
             words.append((word.word_id.text, word.word_to_check))
         random.shuffle(words)
-        print(get_sentence(task.sentence_id.sentence_id), words)
+        #print(get_sentence(task.sentence_id.sentence_id), words)
         return [get_sentence(task.sentence_id.sentence_id), words, task.task_id]
     # ['I love books', ['hate', 'angry', 'love', 'We', 'like'], TASK_ID]
 
@@ -306,7 +302,6 @@ def init_db(database):
         #id = add_error(sentence_id=1, word_ids=[(4, False), (2, True), (5, False), (6, False), (7, False)])
         #id = add_error(sentence_id=1, word_ids=[(4, False), (2, True), (5, False), (6, False), (8, False)])
         #id = add_error(sentence_id=1, word_ids=[(4, False), (2, True), (5, False), (6, False), (9, False)])
-    #
 
     #get_task(1)
 
@@ -316,9 +311,6 @@ try:
     db.connect()
     if DEBUG:
         init_db(db)
-
-    for word in Word.select():
-        print(word.text, word.word_id)
 
     #for sentence in Sentence.select():
     #    print(get_sentence(sentence.sentence_id),sentence.sentence_id, sentence.word_id)
@@ -336,34 +328,4 @@ except InternalError as e:
 
 print('hello from database')
 for word in Word.select():
-    if word.word_id == 490:
-        print(word.text, word.word_id)
-
-
-
-
-# delete_error(1)
-#  Category.select().where(Category.name == category_name.strip()).get()
-#  LotteryNumber.select().order_by(fn.Random()).limit(5)
-
-
-
-
-"""
-with db.manual_commit():
-db.begin()  # Have to begin transaction explicitly.
-try:
-    user.delete_instance(recursive=True)
-except:
-    db.rollback()  # Rollback! An error occurred.
-    raise
-else:
-    try:
-        db.commit()  # Commit changes.
-    except:
-        db.rollback()
-        raise
-"""
-# grandma = Person.select().where(Person.name == 'Grandma L.').get()
-# grandma = Person.get(Person.name == 'Grandma L.')
-# for person in Person.select():
+    print(word.text, word.word_id)

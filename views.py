@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QObject, pyqtSignal, pyqtProperty, QTimer, QDateTime, pyqtSlot
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from base import *
 import random
 from PyQt5.QtCore import QMetaObject, Q_ARG, QVariant
@@ -30,30 +30,6 @@ def update_error_sentences(obj, s_id, e):
     QMetaObject.invokeMethod(obj, "update_error_sentences", Q_ARG(QVariant, [s_id, e]))
 
 
-class Calculator(QObject):
-    def __init__(self):
-        QObject.__init__(self)
-
-    # cигнал передающий сумму
-    # обязательно даём название аргументу через arguments=['sum']
-    # иначе нельзя будет его забрать в QML
-    sumResult = pyqtSignal(int, arguments=['sum'])
-    subResult = pyqtSignal(int, arguments=['sub'])
-
-    # слот для суммирования двух чисел
-    @pyqtSlot(int, int)
-    def sum(self, arg1, arg2):
-        # складываем два аргумента и испускаем сигнал
-        self.sumResult.emit(arg1 + arg2)
-
-    # слот для вычитания двух чисел
-    @pyqtSlot(int, int)
-    def sub(self, arg1, arg2):
-        # вычитаем аргументы и испускаем сигнал
-        self.subResult.emit(arg1 - arg2)
-
-
-
 def make_new_task(dif):
     sentence = get_sentence(length=dif * 2, with_id=True)
     sentence_id = sentence[1]
@@ -64,17 +40,17 @@ def make_new_task(dif):
     for word in words:
         sentence.append((word, word in words_to_check))
     words = get_words(cnt=dif * 5)
-    print('words len', len(words), words)
+    #print('words len', len(words), words)
     uniq_words = []
     for word in words:
         if word not in words_to_check:
             uniq_words.append((word, False))
-    print('uniq_words len', len(uniq_words))
+    #print('uniq_words len', len(uniq_words))
     words_to_check = list(words_to_check)
     answer = [sentence, uniq_words[:dif * 4] + [(words_to_check[i], True) for i in range(len(words_to_check))],
               sentence_id]
-    print("answer")
-    print(answer)
+    #print("answer")
+    #print(answer)
     return answer
 # [[("word1", False),("word2", True)], [words with correct], sentence_id]
 
@@ -83,7 +59,7 @@ def make_new_task(dif):
 def make_old_task(dif):
     data = get_task(dif)
     # ['I love books', [('hate', False), ('angry', False), ('love',True), ('We', False), ('like', False)], TASK_ID]
-    print(data)
+    #print(data)
 
     sentence_ = data[0].split(' ')
     words_ = data[1]
@@ -103,7 +79,7 @@ class TextEditor(QObject):
     def __init__(self):
         QObject.__init__(self)
 
-    getResult = pyqtSignal(str, arguments=['get_text'])
+    #getResult = pyqtSignal(str, arguments=['get_text'])
     setResult = pyqtSignal(arguments=['set_text'])
     getTask = pyqtSignal(arguments=['get_task'])
     writeAnswer = pyqtSignal(arguments=['write_answer'])
@@ -118,19 +94,13 @@ class TextEditor(QObject):
     MISTAKES = 0
     correct_words = []  # [("word1", False),("word2", True),.....] #full sentence
     all_words = []
-    TASK_ID = -1  # if not -1 -> get task from existing + delete task if correct
+    TASK_ID = -1
     SENTENCE_ID = -1
 
-    # all_words = []  # with or without correct?
 
     def init_data(self, database, obj_):
         self.db = database
         self.obj = obj_
-
-    @pyqtSlot()
-    def get_text(self):
-        print("get slot")
-        self.getResult.emit('hello')
 
     @pyqtSlot(str)
     def set_text(self, text):
@@ -139,13 +109,12 @@ class TextEditor(QObject):
 
     @pyqtSlot(int, int)
     def get_task(self, difficulty, task_type):  # TRAIN 0, TEST 1
-        print('hello from get task')
+        #print('hello from get task')
         difficulty += 1
         words = None
         data = None
         if task_type == 1:
             data = make_old_task(difficulty)
-            print("here", data)
             self.TASK_ID = data[2]
             self.correct_words = data[0]
             random.shuffle(data[1])
@@ -159,7 +128,7 @@ class TextEditor(QObject):
         self.all_words = words
         s = []
         for word, flag in self.correct_words:
-            print(self.correct_words)
+            #print(self.correct_words)
             if flag:
                 s.append((".........", flag))
             else:
@@ -182,7 +151,7 @@ class TextEditor(QObject):
     def get_mark(self):
         if self.TASK_ID == -1:  # train mode
             if self.MISTAKES > 0:
-                print("START SAVING NEW ERROR")
+                #print("START SAVING NEW ERROR")
                 id = add_error(sentence_id=self.SENTENCE_ID, word_texts=self.all_words)  # all_words
             else:
                 print('train mode. nothing to do')
@@ -190,7 +159,7 @@ class TextEditor(QObject):
             if self.MISTAKES > 0:
                 print('test mode. nothing to do')
             else:
-                print("START DELETING OLD ERROR")
+                #print("START DELETING OLD ERROR")
                 delete_error(self.TASK_ID)
 
         answer = ""
@@ -208,7 +177,7 @@ class TextEditor(QObject):
 
     @pyqtSlot(str, int)
     def rewrite_sentence(self, sentence, id):
-        print(sentence, id)
+        #print(sentence, id)
         if sentence == "":  # delete sentence
             delete_sentence(id)
             new_id = -1  # does not matter
@@ -228,19 +197,16 @@ class TextEditor(QObject):
 
         self.rewriteSentence.emit(new_id)  # new id if add or old if deleted/rewrited (will refresh sentence_id anyway)
 
-    # НЕ НУЖНО
     @pyqtSlot()
-    def update_sentences(self):
-        print('update')
+    def update_sentences(self):  # fill Sentences screen
+        #print('update')
         data = get_sentences(True)
         init_form(self.obj, data)
-        # init_form() init_form(obj, sentences, err, ids):
-        #
         self.updateSentences.emit()
 
     @pyqtSlot(int, int)
     def check_task_exist(self, difficulty, task_type):  # TRAIN 0, TEST 1
-        print(difficulty)
+        #print(difficulty)
         difficulty += 1
         exists = True
         if task_type == 1:

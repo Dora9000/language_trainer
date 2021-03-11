@@ -67,7 +67,7 @@ Item {
             width: 150
             text: "Start solving"
             onClicked: {
-            text_editor.set_text(2);
+            //text_editor.set_text(2);
                 active_window = 2
             }
         }
@@ -96,7 +96,7 @@ Item {
             width: 150
             text: "Other"
             onClicked: {
-            text_editor.set_text(1);
+            //text_editor.set_text(1);
                 active_window = 1
             }
         }
@@ -172,7 +172,7 @@ Item {
                         train_screen.train_started = true
                         finish_sentence_button.visible = false
                         result.text = ""
-                        text_editor.set_text("hello from start_train_button");
+                        //text_editor.set_text("hello from start_train_button");
                     } else {
                         text_editor.set_text("do not exist");
                         train_screen_text.text = "Test mode with this difficulty does not exist yet. \n\nTry different parameters"
@@ -239,9 +239,6 @@ Item {
         }
 
 
-
-
-
         Rectangle {
             width: parent.width; height: parent.height / 2
             anchors.top: parent.top
@@ -290,7 +287,7 @@ Item {
                         text_editor.get_mark()
                         enabled = false
                         finish_sentence_button.visible = true
-                        text_editor.set_text("hello from check_sentence_button");
+                        //text_editor.set_text("hello from check_sentence_button");
                     }
                 }
             }
@@ -300,7 +297,7 @@ Item {
                 anchors.bottom: parent.bottom
                 anchors.rightMargin: 50
                 anchors.bottomMargin: 0
-                text: "" //1 mistake
+                text: ""
             }
 
             Rectangle {
@@ -315,8 +312,6 @@ Item {
                 ListModel {
                     id: textModel
                     property var insertIndex : -1
-                    //ListElement { text: "Hello"; active_drop : false}
-                    //ListElement { text: ".........."; active_drop : true}
                 }
 
                 Flow {
@@ -353,15 +348,15 @@ Item {
                                 onEntered: {
                                     if (parent.active_drop) {
                                         parent.opacity = 0.6
-                                        text_editor.set_text(dndGrid.draggedItemIndex)
+                                        //text_editor.set_text(dndGrid.draggedItemIndex)
                                         dndModel.set(dndGrid.draggedItemIndex, { color : "#80FF0000"})
                                         textModel.insertIndex = index
-                                        text_editor.set_text(index)
+                                        //text_editor.set_text(index)
                                     }
                                 }
                                 onExited: {
                                 parent.opacity = 1
-                                    text_editor.set_text("exit")
+                                    //text_editor.set_text("exit")
                                     dndModel.set(dndGrid.draggedItemIndex, { color : "white"})
                                     textModel.insertIndex = -1
                                 }
@@ -425,9 +420,8 @@ Item {
                                 PropertyChanges { target: wrapper; width: 200 }
                                 PropertyChanges { target: wrapper; height: 50 }
                                 PropertyChanges { target: wrapper; parent: dndWordContainer }
-                                //PropertyChanges { target: wrapper; anchors.centerIn: undefined }
-                                PropertyChanges { target: wrapper; x: coords.mouseX}// - wrapper.width / 2 - 30
-                                PropertyChanges { target: wrapper; y: coords.mouseY}// - wrapper.height - train_screen.height / 2 }
+                                PropertyChanges { target: wrapper; x: coords.mouseX}
+                                PropertyChanges { target: wrapper; y: coords.mouseY}
                                 PropertyChanges { target: dndGrid; draggedItemIndex : index }
                                 PropertyChanges { target: imageBorder; opacity: 1 }
                             }
@@ -436,10 +430,6 @@ Item {
                         Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.OutQuint } }
                         Behavior on height { NumberAnimation { duration: 900; easing.type: Easing.OutElastic } }
                         Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.InOutQuad } }
-
-
-
-
 
                         Drag.active: dragArea.drag.active
                         Drag.hotSpot.x: wrapper.width / 2
@@ -450,16 +440,11 @@ Item {
                             drag.target: parent
                             enabled : (dndModel.get(index).color == "white")
 
-                            onPressed: {
-                               // var i = index
-                                text_editor.set_text(dragArea.enabled);
-                            }
-
                             onReleased: {
                                 if (textModel.insertIndex != -1) {
                                     var newPos = textModel.insertIndex
                                     var new_text = dndModel.get(index).text
-                                    text_editor.set_text(new_text);
+                                    //text_editor.set_text(new_text);
                                     text_editor.write_answer(new_text, newPos);
                                     textModel.remove(newPos);
                                     textModel.insert(newPos,{text:new_text});
@@ -469,7 +454,6 @@ Item {
                                 }
                             }
                         }
-
 
                         Rectangle {
                             id: imageBorder
@@ -481,14 +465,11 @@ Item {
                             opacity: 0
                         }
                     }
-
                 }
 
 
                 ListModel {
                     id: dndModel
-                    //ListElement {color:"white"; text:"WORD"}
-
                 }
 
                 GridView {
@@ -510,9 +491,6 @@ Item {
                 }
             }
         }
-
-//DEBUG text_editor.set_text(rect.x);
-
     }
 
 
@@ -555,8 +533,6 @@ Item {
                     //text_input_button_esc.visible = true;
                     text_input_back_area.enabled = true;
                     menu_mouse.enabled = true;
-                    // text_editor.rewrite_sentence(new_text, dataModel.get(view.currentIndex).sentence_id)
-
                 }
             }
 
@@ -570,7 +546,6 @@ Item {
                 width: 100
                 text: "delete"
                 onClicked: {
-                //dataModel.setProperty(view.currentIndex, "err", 0);
                     text_editor.rewrite_sentence("", dataModel.get(view.currentIndex).sentence_id)
                     dataModel.remove(view.currentIndex)
                 }
@@ -595,7 +570,6 @@ Item {
                         text_input_button_esc.visible = true;
                         text_input_back_area.enabled = true;
                     }
-                    //(dataModel.setProperty(view.currentIndex, "text", "some new text"))
                 }
             }
 
@@ -714,7 +688,7 @@ Item {
                             Text {
                                 anchors.centerIn: parent
                                 renderType: Text.NativeRendering
-                                text: model.err + '/' + sentence_id
+                                text: model.err// + '/' + sentence_id
                                 font.bold: isCurrent ? true : false
                             }
 
@@ -773,7 +747,7 @@ Item {
                 font.pixelSize: 15
             }
         }
-//Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.InOutQuad } }
+
         Rectangle {
             id : text_input
             width: 450
@@ -835,7 +809,6 @@ Item {
                 text_input_button.visible = false;
                 var new_text = edit.text.replace(/ {1,}/g," "); //Удаление двойных пробелов
                 new_text = new_text.trim(); //Удаление в начале и конце
-                //text_editor.set_text(new_text);
 
                 text_input_button_esc.visible = false;
 
@@ -874,12 +847,9 @@ Item {
 
 
 
-
     Connections {
         target: text_editor
-        onGetResult: {
-            //getResult.text = get_text
-        }
+
         onSetResult: {}
         onGetTask : {}
         onWriteAnswer : {}
@@ -892,14 +862,6 @@ Item {
         onUpdateSentences : {}
         onCheckTaskExist : {
             start_train_button.taskExist = check_task_exist
-        }
-    }
-
-    Connections {
-    target: calculator
-        onSumResult: {
-            // sum было задано через arguments=['sum']
-            sumResult.text = sum
         }
     }
 }
