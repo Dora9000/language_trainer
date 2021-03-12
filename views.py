@@ -159,7 +159,6 @@ class TextEditor(QObject):
             if self.MISTAKES > 0:
                 print('test mode. nothing to do')
             else:
-                #print("START DELETING OLD ERROR")
                 delete_error(self.TASK_ID)
 
         answer = ""
@@ -183,7 +182,6 @@ class TextEditor(QObject):
 
     @pyqtSlot(str, int)
     def rewrite_sentence(self, sentence, id):
-        #print(sentence, id)
         if sentence == "":  # delete sentence
             delete_sentence(id)
             new_id = -1  # does not matter
@@ -205,14 +203,12 @@ class TextEditor(QObject):
 
     @pyqtSlot()
     def update_sentences(self):  # fill Sentences screen
-        #print('update')
         data = get_sentences(True)
         init_form(self.obj, data)
         self.updateSentences.emit()
 
     @pyqtSlot(int, int)
     def check_task_exist(self, difficulty, task_type):  # TRAIN 0, TEST 1
-        #print(difficulty)
         difficulty += 1
         exists = True
         if task_type == 1:

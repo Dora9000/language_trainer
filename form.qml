@@ -4,6 +4,7 @@ import QtQuick.Window 2.0
 import QtQuick.Layouts 1.15
 import QtQuick.Controls 2.1
 import QtGraphicalEffects 1.15
+
 Item {
     id:background
     width: 950; height: 600
@@ -25,7 +26,6 @@ Item {
 
         for (let i = 0; i < dataModel.count; i++) {
             if (dataModel.get(i).sentence_id == s_id) {
-            //text_editor.set_text(i);
                 dataModel.setProperty(i, "err", e);
                 break;
             }
@@ -67,7 +67,6 @@ Item {
             width: 150
             text: "Start solving"
             onClicked: {
-            //text_editor.set_text(2);
                 active_window = 2
             }
         }
@@ -82,8 +81,6 @@ Item {
             onClicked: {
                 dataModel.clear()
                 text_editor.update_sentences()
-
-
                 active_window = 0
             }
         }
@@ -96,7 +93,6 @@ Item {
             width: 150
             text: "Other"
             onClicked: {
-            //text_editor.set_text(1);
                 active_window = 1
             }
         }
@@ -238,7 +234,6 @@ Item {
                 RadioButton { text: "Test"; font.pixelSize: 15 }
             }
 
-
         }
 
 
@@ -287,6 +282,7 @@ Item {
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.verticalCenter: parent.verticalCenter
                     text: ""
+                    color: text == "Correct!"? "green" : "red"//"white"
                     font.pointSize: 13
                 }
 
@@ -344,11 +340,12 @@ Item {
                         model: textModel
                         Rectangle {
                             width: t_metrics.tightBoundingRect.width + 20
-                            height: 40//t_metrics.tightBoundingRect.height + 10
+                            height: 40  //t_metrics.tightBoundingRect.height + 10
                             property bool active_drop : model.active_drop
                             property bool caught_drop : false
-                            color: active_drop?  "red" : "white";
+                            color: active_drop? "red" : "white";
                             radius: 5;
+                            opacity: active_drop? 0.5 : 1
 
                             Text {
                                 id: currentText
@@ -367,16 +364,16 @@ Item {
                                 anchors.fill: parent
                                 onEntered: {
                                     if (parent.active_drop) {
-                                        parent.opacity = 0.6
-                                        //text_editor.set_text(dndGrid.draggedItemIndex)
-                                        dndModel.set(dndGrid.draggedItemIndex, { color : "#80FF0000"})
+                                        var t = dndGrid.draggedItemIndex;
+                                        parent.opacity = 1
+                                        dndModel.set(t, { color : "#80FF0000"})
                                         textModel.insertIndex = index
-                                        //text_editor.set_text(index)
                                     }
                                 }
                                 onExited: {
-                                parent.opacity = 1
-                                    //text_editor.set_text("exit")
+                                    if (parent.active_drop) {
+                                        parent.opacity = 0.5
+                                    }
                                     dndModel.set(dndGrid.draggedItemIndex, { color : "white"})
                                     textModel.insertIndex = -1
                                 }
@@ -387,7 +384,6 @@ Item {
                 }
             }
         }
-
 
 
         // НИЖНЯЯ ПОЛОВИНА
@@ -437,7 +433,7 @@ Item {
                             State {
                                 name: "inDrag"
                                 when: dragArea.drag.active
-                                PropertyChanges { target: wrapper; width: 180 }
+                                PropertyChanges { target: wrapper; width: 175 }
                                 PropertyChanges { target: wrapper; height: 50 }
                                 PropertyChanges { target: wrapper; parent: dndWordContainer }
                                 PropertyChanges { target: wrapper; x: coords.mouseX}
@@ -487,7 +483,6 @@ Item {
                     }
                 }
 
-
                 ListModel {
                     id: dndModel
                 }
@@ -510,7 +505,6 @@ Item {
 
                 }
 
-
                 Rectangle {
                     id: answer_sentence
                     property var answer_text_ : ""
@@ -518,17 +512,19 @@ Item {
                     anchors.fill: parent
                     clip: true
                     height: 40
-                    //width: 100
+
                     color: "mistyrose"
                     Text {
                         text: parent.answer_text_
-                        //anchors.fill: parent
+                        width: 700
+                        wrapMode: Text.WordWrap
                         anchors.centerIn: answer_sentence
                         anchors.horizontalCenter: parent.horizontalCenter
-                        font.pointSize: 10
+                        anchors.leftMargin: 10
+                        anchors.rightMargin: 10
+                        font.pointSize: 12
                     }
                 }
-
             }
         }
     }
@@ -545,8 +541,6 @@ Item {
         width: parent.width - menu_size; height: parent.height
         anchors.leftMargin: menu_size
         anchors.left: parent.left
-
-
 
         Rectangle {
             id : font_blur0
@@ -621,7 +615,6 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
                 anchors.topMargin: hat_size
-
 
                 ListModel {
                     id: dataModel
@@ -731,12 +724,10 @@ Item {
                                 text: model.err// + '/' + sentence_id
                                 font.bold: isCurrent ? true : false
                             }
-
                         }
                     }
                 }
             }
-
         }
 
 
@@ -885,21 +876,15 @@ Item {
         }
     }
 
-
-
     Connections {
         target: text_editor
-
         onSetResult: {}
         onGetTask : {}
         onWriteAnswer : {}
         onGetMark : {
             var answer_ = get_mark
-
-            //text_editor.set_text(answer_);
             result.text = answer_[0]
             answer_sentence.answer_text_ = answer_[1]
-            //text_editor.set_text(answer_);
             answer_sentence.color = "white"
         }
         onRewriteSentence : {
