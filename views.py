@@ -33,24 +33,24 @@ def update_error_sentences(obj, s_id, e):
 def make_new_task(dif):
     sentence = get_sentence(length=dif * 2, with_id=True)
     sentence_id = sentence[1]
-    sentence = sentence[0]
-    words = sentence.split(' ')
-    words_to_check = set(random.sample(words, dif))
-    sentence = []
-    for word in words:
-        sentence.append((word, word in words_to_check))
+    sentence = sentence[0].split(' ')
+    words = [i for i in range(len(sentence))]
+    words_to_check = set(random.sample(words, dif))  # numbers
+    answer_1 = [(sentence[i], i in words_to_check) for i in range(len(sentence))]
+    print(sentence, words_to_check)
+
+    words_to_check = set([sentence[i] for i in words_to_check])
+    print(words_to_check)
     words = get_words(cnt=dif * 5)
-    #print('words len', len(words), words)
     uniq_words = []
     for word in words:
         if word not in words_to_check:
             uniq_words.append((word, False))
-    #print('uniq_words len', len(uniq_words))
     words_to_check = list(words_to_check)
-    answer = [sentence, uniq_words[:dif * 4] + [(words_to_check[i], True) for i in range(len(words_to_check))],
+    print(len(words_to_check), len(uniq_words[:dif * 4]))
+    answer = [answer_1, uniq_words[:dif * 4] + [(words_to_check[i], True) for i in range(len(words_to_check))],
               sentence_id]
-    #print("answer")
-    #print(answer)
+
     return answer
 # [[("word1", False),("word2", True)], [words with correct], sentence_id]
 
@@ -83,7 +83,7 @@ class TextEditor(QObject):
     setResult = pyqtSignal(arguments=['set_text'])
     getTask = pyqtSignal(arguments=['get_task'])
     writeAnswer = pyqtSignal(arguments=['write_answer'])
-    getMark = pyqtSignal(str, arguments=['get_mark'])
+    getMark = pyqtSignal(list, arguments=['get_mark'])
     rewriteSentence = pyqtSignal(int, arguments=['rewrite_sentence'])
     updateSentences = pyqtSignal(arguments=['update_sentences'])
     checkTaskExist = pyqtSignal(bool, arguments=['check_task_exist'])
@@ -169,11 +169,17 @@ class TextEditor(QObject):
                 answer += "s"
         else:
             answer = "Correct!"
+
+        s = ""
+        for word_, flag_ in self.correct_words:
+            s += word_ + ' '
+        s = s[:-1]
         self.correct_words = []
         self.TASK_ID = -1
         self.SENTENCE_ID = -1
         self.MISTAKES = 0
-        self.getMark.emit(answer)
+
+        self.getMark.emit([answer, s])
 
     @pyqtSlot(str, int)
     def rewrite_sentence(self, sentence, id):

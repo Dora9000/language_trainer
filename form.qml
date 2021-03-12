@@ -177,6 +177,9 @@ Item {
                         text_editor.set_text("do not exist");
                         train_screen_text.text = "Test mode with this difficulty does not exist yet. \n\nTry different parameters"
                     }
+
+                    answer_sentence.answer_text_ = "";
+                    answer_sentence.color = "mistyrose";
                 }
             }
 
@@ -189,7 +192,7 @@ Item {
                     if (button.text == "Middle") {
                         train_screen_0.level = 1
                     }
-                    if (button.text == "Heavy") {
+                    if (button.text == "Hard") {
                         train_screen_0.level = 2
                     }
                 }
@@ -206,7 +209,7 @@ Item {
                 }
                 RadioButton { text: "Light"; checked : true; font.pixelSize: 15 }
                 RadioButton { text: "Middle"; font.pixelSize: 15 }
-                RadioButton { text: "Heavy"; font.pixelSize: 15 }
+                RadioButton { text: "Hard"; font.pixelSize: 15 }
             }
 
             ButtonGroup {
@@ -265,6 +268,30 @@ Item {
                     menu_mouse.enabled = false
                 }
             }
+
+
+
+        Rectangle {
+
+                color: "white"
+                visible: result.text != "" //train_screen.train_started
+                anchors.bottom: parent.bottom
+                height: 40
+                anchors.left: parent.left
+                anchors.right: finish_sentence_button.left
+                anchors.leftMargin: 25
+                anchors.rightMargin: 25
+                anchors.bottomMargin: 15
+                Text {
+                    id : result
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: ""
+                    font.pointSize: 13
+                }
+
+            }
+
             Button {
                 id: check_sentence_button
                 height: 40
@@ -291,14 +318,7 @@ Item {
                     }
                 }
             }
-            Text {
-                id : result
-                anchors.right: parent.right
-                anchors.bottom: parent.bottom
-                anchors.rightMargin: 50
-                anchors.bottomMargin: 0
-                text: ""
-            }
+
 
             Rectangle {
                 visible: true
@@ -391,7 +411,7 @@ Item {
 
                     Rectangle {
                         id: wrapper
-                        width: 230
+                        width: 200
                         height: 35
                         color : model.color
                         Text {
@@ -417,7 +437,7 @@ Item {
                             State {
                                 name: "inDrag"
                                 when: dragArea.drag.active
-                                PropertyChanges { target: wrapper; width: 200 }
+                                PropertyChanges { target: wrapper; width: 180 }
                                 PropertyChanges { target: wrapper; height: 50 }
                                 PropertyChanges { target: wrapper; parent: dndWordContainer }
                                 PropertyChanges { target: wrapper; x: coords.mouseX}
@@ -489,6 +509,26 @@ Item {
                     }
 
                 }
+
+
+                Rectangle {
+                    id: answer_sentence
+                    property var answer_text_ : ""
+                    visible : (answer_text_ != "")
+                    anchors.fill: parent
+                    clip: true
+                    height: 40
+                    //width: 100
+                    color: "mistyrose"
+                    Text {
+                        text: parent.answer_text_
+                        //anchors.fill: parent
+                        anchors.centerIn: answer_sentence
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        font.pointSize: 10
+                    }
+                }
+
             }
         }
     }
@@ -854,7 +894,13 @@ Item {
         onGetTask : {}
         onWriteAnswer : {}
         onGetMark : {
-            result.text = get_mark
+            var answer_ = get_mark
+
+            //text_editor.set_text(answer_);
+            result.text = answer_[0]
+            answer_sentence.answer_text_ = answer_[1]
+            //text_editor.set_text(answer_);
+            answer_sentence.color = "white"
         }
         onRewriteSentence : {
             dataModel.setProperty(view.currentIndex, "sentence_id", rewrite_sentence)

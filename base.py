@@ -3,8 +3,8 @@ from settings import DB_FILE, DEBUG, LOAD_DATA
 import random
 import os
 
-#if DEBUG:
-#    os.remove(DB_FILE)
+if DEBUG:
+    os.remove(DB_FILE)
 db = SqliteDatabase(DB_FILE)
 
 
@@ -52,7 +52,7 @@ class Error(BaseModel):
 
 
 def add_word(text):
-    if len(text) == 0:
+    if len(text) == 0 or text == ' ':
         return -1
     val = Word.select(fn.MAX(Word.word_id)).scalar()
     val = (0 if val is None else val) + 1
@@ -61,11 +61,12 @@ def add_word(text):
             word_id=val,
             text=text,
         )
-        row.save()
+        #row.save()
         return val
 
     except Exception as e:
-        print(e)
+        if e.args[0] == "UNIQUE constraint failed: Word.text":
+            return None
         return None
 
 
@@ -78,9 +79,10 @@ def add_sentence(text):  # text is list
         if len(w) == 0 or w == ' ':
             continue
         try:
-            w = Word.select().where(Word.text == w).get()
+            #w = Word.select().where(Word.text == w).get()
+            w = Word.get(Word.text == w)
         except DoesNotExist:
-            print('Error. Word {0} does not exist'.format(w))
+            print('Error. Word {0} does not exist'.format(w.text))
             return None
         except Exception as e:
             print(e)
@@ -88,11 +90,11 @@ def add_sentence(text):  # text is list
         else:
             row = Sentence.create(
                 sentence_id=val,
-                word_id=w,
+                word_id=w.word_id,
                 order=i,
                 length=len(text),
             )
-            row.save()
+            #row.save()
     return val
 
 
@@ -118,7 +120,7 @@ def add_error(sentence_id, word_ids=None, word_texts=None):  # word_ids is list 
                     difficulty=(len(word_ids) % 5 + 1),
                     word_to_check=flag,
                 )
-                row.save()
+                #row.save()
             return val
         except Exception as e:
             print(e)
@@ -135,78 +137,34 @@ def delete_error(task_id):
 def delete_sentence(sentence_id):
     ss = Sentence.select().where(Sentence.sentence_id == sentence_id)
     for s in ss:
-        #print("ssssssss ", get_sentence(s.sentence_id), s.sentence_id)
         s.delete_instance(recursive=True)
-    #print("sentence deleted")
-
     err = Error.select().where(Error.sentence_id == sentence_id)
-    #print("got e")
     for e in err:
-        #print(e.sentence_id, e.word_id.text)
         e.delete_instance(recursive=True)
-    #print("errors deleted")
-
-
-    if False:
-        for word in Word.select():
-            print(word.text, word.word_id)
-
-        for sentence in Sentence.select():
-            print(get_sentence(sentence.sentence_id),sentence.sentence_id, sentence.word_id)
-        #for id in Sentence.select(Sentence.sentence_id).distinct():
-        #    print(get_sentence(id.sentence_id))
-        #print(get_sentences(True))
-
-        print('err')
-        for e in Error.select():
-            print(e.sentence_id.sentence_id, e.word_id, e.task_id, e.difficulty, e.word_to_check)
-
-        print('============================')
-
-
-
-
-
-
-
-
-#def get_word(id=None, cnt=1):
-#    if id is None:
-#        assert(False)
- #       all_words = set(Word.select().text)
-        #print(all_words)
- #       assert(len(all_words) >= cnt)
- #       return random.sample(all_words, cnt)
-#    return Word.get(Word.word_id == id).text
 
 
 def get_words(cnt=1):
     words_ = Word.select().order_by(fn.Random()).limit(cnt)
     words = []
     for word in words_:
-        #print("WORDS ", word)
         words.append(word.text)
-    #print(words, cnt)
     assert(len(words) == cnt)
     return words
 
 
 def get_sentence(id=None, length=0, with_id=False):
-    all_sentences = Sentence.select()
     if id is None:
         len_sentences = set()
-        for s in all_sentences:
+        for s in Sentence.select():
             if s.length >= length:
                 len_sentences.add(s.sentence_id)
         id = random.sample(len_sentences, 1)[0]
-    words = []
-    for s in all_sentences:
-        if s.sentence_id == id:
-            words.append([s.word_id.text, s.order])
+    all_sentences = Sentence.select(Sentence.word_id, Sentence.order).where(Sentence.sentence_id == id)
+    print(all_sentences)
+    words = [[s.word_id.text, s.order] for s in all_sentences]
 
     words.sort(key=lambda x: x[1])
     words = [words[i][0] for i in range(len(words))]
-    #words = [get_word(id=words[i]) for i in range(len(words))]
     if with_id:
         return [" ".join(words), id]
     else:
@@ -241,7 +199,6 @@ def check_task_exist_db(dif):
 
 
 def get_task(dif):
-    #('get task from DB')
     query = Error.select().where(Error.difficulty == dif)
     if not query.exists():
         print('task with dif {0} do not exist'.format(dif))
@@ -252,14 +209,10 @@ def get_task(dif):
         words_ = Error.select().where(Error.task_id == task.task_id)
         words = []
         for word in words_:
-            #print("WORDS TO GET TASK", word.word_id.text, word.word_to_check)
             words.append((word.word_id.text, word.word_to_check))
         random.shuffle(words)
-        #print(get_sentence(task.sentence_id.sentence_id), words)
         return [get_sentence(task.sentence_id.sentence_id), words, task.task_id]
     # ['I love books', ['hate', 'angry', 'love', 'We', 'like'], TASK_ID]
-
-
 
 
 def init_db(database):
@@ -280,6 +233,7 @@ def init_db(database):
             for word in w:
                 add_word(word)
             add_sentence(st.split(' '))
+
         words = s[1].split(',')
         for word in words:
             word = word.strip('\n')
@@ -305,22 +259,10 @@ def init_db(database):
 
     #get_task(1)
 
-
-
 try:
     db.connect()
     if DEBUG:
         init_db(db)
-
-    #for sentence in Sentence.select():
-    #    print(get_sentence(sentence.sentence_id),sentence.sentence_id, sentence.word_id)
-    #for id in Sentence.select(Sentence.sentence_id).distinct():
-    #    print(get_sentence(id.sentence_id))
-    #print(get_sentences(True))
-
-    #print('err')
-    #for e in Error.select():
-    #    print(e.sentence_id.sentence_id, e.word_id, e.task_id, e.difficulty)
 
     db.close()
 except InternalError as e:
