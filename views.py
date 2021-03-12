@@ -18,8 +18,6 @@ def append_word_to_sentence(obj, words_list):
 
 
 def init_form(obj, sentences):
-    # [..., [get_sentence(id=sentence.sentence_id), len(task_ids), sentence.sentence_id], ....]
-    # add sentences with/without errors
     for i in range(len(sentences)):
         value = {"text": sentences[i][0], "color": "bisque", "err": str(sentences[i][1]),
                  "sentence_id": str(sentences[i][2])}
@@ -31,40 +29,38 @@ def update_error_sentences(obj, s_id, e):
 
 
 def make_new_task(dif):
+    """
+    Make new task to solve from random sentence
+    :param dif: 1-3
+    :return: [[("word1", False),("word2", True)], [words with correct], sentence_id]
+    """
     sentence = get_sentence(length=dif * 2, with_id=True)
     sentence_id = sentence[1]
     sentence = sentence[0].split(' ')
     words = [i for i in range(len(sentence))]
     words_to_check = set(random.sample(words, dif))  # numbers
     answer_1 = [(sentence[i], i in words_to_check) for i in range(len(sentence))]
-    print(sentence, words_to_check)
-
     words_to_check = set([sentence[i] for i in words_to_check])
-    print(words_to_check)
     words = get_words(cnt=dif * 5)
     uniq_words = []
     for word in words:
         if word not in words_to_check:
             uniq_words.append((word, False))
     words_to_check = list(words_to_check)
-    print(len(words_to_check), len(uniq_words[:dif * 4]))
-    answer = [answer_1, uniq_words[:dif * 4] + [(words_to_check[i], True) for i in range(len(words_to_check))],
+    return [answer_1, uniq_words[:dif * 4] + [(words_to_check[i], True) for i in range(len(words_to_check))],
               sentence_id]
-
-    return answer
-# [[("word1", False),("word2", True)], [words with correct], sentence_id]
-
 
 
 def make_old_task(dif):
+    """
+    Make task from existed in DB
+    :param dif: 1-3
+    :return: [[("word1", False),("word2", True)], [words with correct], task_id]
+    """
     data = get_task(dif)
-    # ['I love books', [('hate', False), ('angry', False), ('love',True), ('We', False), ('like', False)], TASK_ID]
-    #print(data)
-
     sentence_ = data[0].split(' ')
     words_ = data[1]
     words_to_check = set()
-    words = [words_[i][0] for i in range(len(words_))]
     for word, flag in words_:
         if flag:
             words_to_check.add(word)
@@ -72,14 +68,10 @@ def make_old_task(dif):
     return [sentence, words_, data[2]]
 
 
-# [[("word1", False),("word2", True)], [words with correct], task_id]
-
-
 class TextEditor(QObject):
     def __init__(self):
         QObject.__init__(self)
 
-    #getResult = pyqtSignal(str, arguments=['get_text'])
     setResult = pyqtSignal(arguments=['set_text'])
     getTask = pyqtSignal(arguments=['get_task'])
     writeAnswer = pyqtSignal(arguments=['write_answer'])
@@ -109,7 +101,6 @@ class TextEditor(QObject):
 
     @pyqtSlot(int, int)
     def get_task(self, difficulty, task_type):  # TRAIN 0, TEST 1
-        #print('hello from get task')
         difficulty += 1
         words = None
         data = None
@@ -128,7 +119,6 @@ class TextEditor(QObject):
         self.all_words = words
         s = []
         for word, flag in self.correct_words:
-            #print(self.correct_words)
             if flag:
                 s.append((".........", flag))
             else:
@@ -141,8 +131,7 @@ class TextEditor(QObject):
 
     @pyqtSlot(str, int)
     def write_answer(self, word, index):
-        # self.answers.append((word, index))
-        print(self.correct_words[index][0], word)
+        #print(self.correct_words[index][0], word)
         if self.correct_words[index][0] != word:
             self.MISTAKES += 1
         self.writeAnswer.emit()
@@ -151,7 +140,6 @@ class TextEditor(QObject):
     def get_mark(self):
         if self.TASK_ID == -1:  # train mode
             if self.MISTAKES > 0:
-                #print("START SAVING NEW ERROR")
                 id = add_error(sentence_id=self.SENTENCE_ID, word_texts=self.all_words)  # all_words
             else:
                 print('train mode. nothing to do')
@@ -177,7 +165,6 @@ class TextEditor(QObject):
         self.TASK_ID = -1
         self.SENTENCE_ID = -1
         self.MISTAKES = 0
-
         self.getMark.emit([answer, s])
 
     @pyqtSlot(str, int)

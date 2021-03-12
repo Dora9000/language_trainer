@@ -1,10 +1,7 @@
 from peewee import *
-from settings import DB_FILE, DEBUG, LOAD_DATA
+from settings import DB_FILE, LOAD_DATA
 import random
-import os
 
-if DEBUG:
-    os.remove(DB_FILE)
 db = SqliteDatabase(DB_FILE)
 
 
@@ -70,7 +67,7 @@ def add_word(text):
         return None
 
 
-def add_sentence(text):  # text is list
+def add_sentence(text):  # text is list. Words must exist in DB (!)
     assert (isinstance(text, list))
     val = Sentence.select(fn.MAX(Sentence.sentence_id)).scalar()
     val = (0 if val is None else val) + 1
@@ -79,7 +76,6 @@ def add_sentence(text):  # text is list
         if len(w) == 0 or w == ' ':
             continue
         try:
-            #w = Word.select().where(Word.text == w).get()
             w = Word.get(Word.text == w)
         except DoesNotExist:
             print('Error. Word {0} does not exist'.format(w.text))
@@ -105,7 +101,6 @@ def add_error(sentence_id, word_ids=None, word_texts=None):  # word_ids is list 
         for text, flag in word_texts:
             word = Word.get(Word.text == text)
             word_ids.append((word.word_id, flag))
-        #print(word_ids)
     if word_ids is not None:
         assert (isinstance(word_ids, list))
         assert (Sentence.get(Sentence.sentence_id == sentence_id) is not None)
@@ -117,7 +112,7 @@ def add_error(sentence_id, word_ids=None, word_texts=None):  # word_ids is list 
                     task_id=val,
                     sentence_id=sentence_id,
                     word_id=word_id,
-                    difficulty=(len(word_ids) % 5 + 1),
+                    difficulty=(len(word_ids) // 5),
                     word_to_check=flag,
                 )
                 #row.save()
@@ -131,7 +126,6 @@ def delete_error(task_id):
     err = Error.select().where(Error.task_id == task_id)
     for e in err:
         e.delete_instance(recursive=True)
-    #print("errors deleted")
 
 
 def delete_sentence(sentence_id):
@@ -144,6 +138,11 @@ def delete_sentence(sentence_id):
 
 
 def get_words(cnt=1):
+    """
+    Get CNT random words from DB
+    :param cnt: number of words
+    :return: list of words in text format
+    """
     words_ = Word.select().order_by(fn.Random()).limit(cnt)
     words = []
     for word in words_:
@@ -153,6 +152,13 @@ def get_words(cnt=1):
 
 
 def get_sentence(id=None, length=0, with_id=False):
+    """
+    Get sentence as text
+    :param id: sentence id. If None, will get random one from DB
+    :param length: minimum len of sentence
+    :param with_id: return sentence with its id or not
+    :return: text or [text,id]
+    """
     if id is None:
         len_sentences = set()
         for s in Sentence.select():
@@ -160,9 +166,7 @@ def get_sentence(id=None, length=0, with_id=False):
                 len_sentences.add(s.sentence_id)
         id = random.sample(len_sentences, 1)[0]
     all_sentences = Sentence.select(Sentence.word_id, Sentence.order).where(Sentence.sentence_id == id)
-    print(all_sentences)
     words = [[s.word_id.text, s.order] for s in all_sentences]
-
     words.sort(key=lambda x: x[1])
     words = [words[i][0] for i in range(len(words))]
     if with_id:
@@ -172,9 +176,12 @@ def get_sentence(id=None, length=0, with_id=False):
 
 
 def get_sentences(with_errors=False):
-    # if with_errors == True -> calculate sum of tasks with errors in this sentence
-    # [["the first sentence", errors],["the second sentence", errors],.....]
-    # [["the first sentence"],["the second sentence"],.....]
+    """
+    Get all sentences from DB as text
+    :param with_errors: if with_errors == True -> calculate sum of tasks with errors in this sentence
+    :return: [["the first sentence", errors],["the second sentence", errors],.....]
+    or [["the first sentence"],["the second sentence"],.....]
+    """
     text = []
     if with_errors:
         for sentence in Sentence.select(Sentence.sentence_id).distinct():
@@ -187,6 +194,11 @@ def get_sentences(with_errors=False):
 
 
 def check_task_exist_db(dif):
+    """
+    Check if Error table have task with this dif
+    :param dif: 1-3
+    :return: True/False
+    """
     try:
         query = Error.select().where(Error.difficulty == dif)
         if not query.exists():
@@ -199,6 +211,10 @@ def check_task_exist_db(dif):
 
 
 def get_task(dif):
+    """
+    :param dif: 1-3
+    :return: ['I love books', [('hate', False), ('angry', False), ('love',True), ('We', False), ('like', False)], TASK_ID]
+    """
     query = Error.select().where(Error.difficulty == dif)
     if not query.exists():
         print('task with dif {0} do not exist'.format(dif))
@@ -212,10 +228,14 @@ def get_task(dif):
             words.append((word.word_id.text, word.word_to_check))
         random.shuffle(words)
         return [get_sentence(task.sentence_id.sentence_id), words, task.task_id]
-    # ['I love books', ['hate', 'angry', 'love', 'We', 'like'], TASK_ID]
 
 
 def init_db(database):
+    """
+    Init DB. Make tables and (if LOAD_DATA == True) fill with data
+    :param database: SQLite obj
+    :return: -
+    """
     database.create_tables([Word, Sentence, Error])
     s = ''
     if LOAD_DATA:
@@ -242,32 +262,5 @@ def init_db(database):
                 continue
             add_word(word)
 
-    for word in ["I", "love", "books", "like", "hate", "dinner", "smile", "angry", "sun", "education"]:
-        add_word(word)
+    #id = add_error(sentence_id=1, word_ids=[(14, False), (2, True), (17, False), (12, False), (18, False)])
 
-    add_sentence('A year has four seasons: spring, summer, autumn and winter'.split(' '))
-    add_sentence('I love books'.split(' '))
-    #add_sentence('I love smile'.split(' '))
-    #add_word('We')
-    if LOAD_DATA:
-        id = add_error(sentence_id=1, word_ids=[(14, False), (2, True), (17, False), (12, False), (18, False)])
-        id = add_error(sentence_id=3, word_ids=[(24, False), (9, True), (27, False), (22, False), (28, False)])
-    #else:
-        #id = add_error(sentence_id=1, word_ids=[(4, False), (2, True), (5, False), (6, False), (7, False)])
-        #id = add_error(sentence_id=1, word_ids=[(4, False), (2, True), (5, False), (6, False), (8, False)])
-        #id = add_error(sentence_id=1, word_ids=[(4, False), (2, True), (5, False), (6, False), (9, False)])
-
-    #get_task(1)
-
-try:
-    db.connect()
-    if DEBUG:
-        init_db(db)
-
-    db.close()
-except InternalError as e:
-    print(e)
-
-print('hello from database')
-for word in Word.select():
-    print(word.text, word.word_id)
