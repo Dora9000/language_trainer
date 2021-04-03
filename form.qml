@@ -35,8 +35,7 @@ Item {
 
     Item {
         /*
-        Меню
-        слева -> начать тренировку, изменить предложения, выйти в меню
+        Menu part
         */
 
         visible: true
@@ -113,11 +112,7 @@ Item {
 
     Item {
         /*
-        Экран «Тренировка»: содержит настройку «Сложность» и кнопку «Начать тренировку». После нажатия
-        «Начать тренировку» отображаются задание и кнопка «Проверить». Задание – из базы выбирается
-        предложение, на экране появляется предложение с пропусками и неразмещённые слова. «Сложность»
-        определяет количество слов, которые нужно разместить. Кнопка «Проверить» проверяет расстановку,
-        при наличии ошибок создаёт запись «Ошибка» в базе.
+        Screen TRAIN
         */
         visible: active_window == 2? true : false
         width: parent.width - menu_size; height: parent.height
@@ -168,7 +163,6 @@ Item {
                         train_screen.train_started = true
                         finish_sentence_button.visible = false
                         result.text = ""
-                        //text_editor.set_text("hello from start_train_button");
                     } else {
                         text_editor.set_text("do not exist");
                         train_screen_text.text = "Test mode with this difficulty does not exist yet. \n\nTry different parameters"
@@ -233,9 +227,7 @@ Item {
                 RadioButton { text: "Train"; checked : true; font.pixelSize: 15}
                 RadioButton { text: "Test"; font.pixelSize: 15 }
             }
-
         }
-
 
         Rectangle {
             width: parent.width; height: parent.height / 2
@@ -243,7 +235,6 @@ Item {
             anchors.right: parent.right
             color: "mistyrose"
             visible: train_screen.train_started
-
 
             Button {
                 id: finish_sentence_button
@@ -265,11 +256,10 @@ Item {
             }
 
 
-
         Rectangle {
 
                 color: "white"
-                visible: result.text != "" //train_screen.train_started
+                visible: result.text != ""
                 anchors.bottom: parent.bottom
                 height: 40
                 anchors.left: parent.left
@@ -285,7 +275,6 @@ Item {
                     color: text == "Correct!"? "green" : "red"//"white"
                     font.pointSize: 13
                 }
-
             }
 
             Button {
@@ -310,11 +299,9 @@ Item {
                         text_editor.get_mark()
                         enabled = false
                         finish_sentence_button.visible = true
-                        //text_editor.set_text("hello from check_sentence_button");
                     }
                 }
             }
-
 
             Rectangle {
                 visible: true
@@ -323,7 +310,6 @@ Item {
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.topMargin: 30
-
 
                 ListModel {
                     id: textModel
@@ -340,7 +326,7 @@ Item {
                         model: textModel
                         Rectangle {
                             width: t_metrics.tightBoundingRect.width + 20
-                            height: 40  //t_metrics.tightBoundingRect.height + 10
+                            height: 40
                             property bool active_drop : model.active_drop
                             property bool caught_drop : false
                             color: active_drop? "red" : "white";
@@ -377,7 +363,6 @@ Item {
                                     dndModel.set(dndGrid.draggedItemIndex, { color : "white"})
                                     textModel.insertIndex = -1
                                 }
-
                             }
                         }
                     }
@@ -386,7 +371,7 @@ Item {
         }
 
 
-        // НИЖНЯЯ ПОЛОВИНА
+        // lower half of the screen
 
         Rectangle {
             width: parent.width; height: parent.height / 2
@@ -417,7 +402,6 @@ Item {
                         }
 
                         states: [
-
                                 State {
                                     name: "greyedOut"
                                     when: (dndGrid.draggedItemIndex != -1) && !(dragArea.drag.active)
@@ -428,7 +412,6 @@ Item {
                                     when: !(dragArea.drag.active)
                                     PropertyChanges { target: wrapper; opacity: 1.0}
                                 },
-
 
                             State {
                                 name: "inDrag"
@@ -460,7 +443,6 @@ Item {
                                 if (textModel.insertIndex != -1) {
                                     var newPos = textModel.insertIndex
                                     var new_text = dndModel.get(index).text
-                                    //text_editor.set_text(new_text);
                                     text_editor.write_answer(new_text, newPos);
                                     textModel.remove(newPos);
                                     textModel.insert(newPos,{text:new_text});
@@ -502,7 +484,6 @@ Item {
                         id: dndWordContainer
                         anchors.fill: parent
                     }
-
                 }
 
                 Rectangle {
@@ -512,7 +493,6 @@ Item {
                     anchors.fill: parent
                     clip: true
                     height: 40
-
                     color: "mistyrose"
                     Text {
                         text: parent.answer_text_
@@ -532,16 +512,12 @@ Item {
 
     Item {
         /*
-        Экран «Предложения»: позволяет редактировать список предложений, которые будут использоваться
-        для генерации контрольных предложений – добавление, удаление, изменение. Напротив каждого
-        элемента списка отображается количество допущенных ошибок
+        screen SENTENCES
         */
-
         visible: (active_window == 0? true : false )
         width: parent.width - menu_size; height: parent.height
         anchors.leftMargin: menu_size
         anchors.left: parent.left
-
         Rectangle {
             id : font_blur0
             color: "whitesmoke"
@@ -564,12 +540,10 @@ Item {
                     text_input_back.opacity = 0.3;
                     text_input.visible = true;
                     text_input_button.visible = true;
-                    //text_input_button_esc.visible = true;
                     text_input_back_area.enabled = true;
                     menu_mouse.enabled = true;
                 }
             }
-
 
             Button {
                 id: add_button2
@@ -584,7 +558,6 @@ Item {
                     dataModel.remove(view.currentIndex)
                 }
             }
-
 
             Button {
                 id: add_button3
@@ -606,7 +579,6 @@ Item {
                     }
                 }
             }
-
 
             Rectangle {
                 opacity: 1
@@ -633,7 +605,6 @@ Item {
                     }
                     highlightFollowsCurrentItem: true
                     highlightMoveDuration : 200
-                    //highlightMoveVelocity : 1000
 
                     header: Item {
                         id: listDelegate
@@ -675,7 +646,6 @@ Item {
                                 text: "Error"
                                 font.bold: true
                             }
-
                         }
                     }
 
@@ -793,8 +763,6 @@ Item {
                 contentWidth: edit.paintedWidth
                 contentHeight: edit.paintedHeight
                 clip: true
-
-
                 function ensureVisible(r) {
                     if (contentX >= r.x) {
                         contentX = r.x;
@@ -823,7 +791,6 @@ Item {
             }
         }
 
-
         Button {
             id: text_input_button
             height: button_size
@@ -838,11 +805,9 @@ Item {
                 text_input_back.opacity = 0;
                 text_input.visible = false;
                 text_input_button.visible = false;
-                var new_text = edit.text.replace(/ {1,}/g," "); //Удаление двойных пробелов
-                new_text = new_text.trim(); //Удаление в начале и конце
-
+                var new_text = edit.text.replace(/ {1,}/g," "); //delete double spaces
+                new_text = new_text.trim();
                 text_input_button_esc.visible = false;
-
                 if (new_text != dataModel.get(view.currentIndex).text) {
                     dataModel.setProperty(view.currentIndex, "text", new_text);
                     dataModel.setProperty(view.currentIndex, "err", 0);
@@ -871,7 +836,6 @@ Item {
                 edit.text = "";
                 text_input_back_area.enabled = false;
                 menu_mouse.enabled = false;
-
             }
         }
     }
